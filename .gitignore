@@ -144,3 +144,9 @@ grounding/version.py
 
 vis/
 tmp/
+
+/weights
+/sprites
+/portraits
+/apicache*
+*.ctrl
