@@ -72,22 +72,23 @@ def predict():
         file_name = image_path.name.replace("_00.png", "")
         result[file_name] =[width, height, center_x, center_y]
     
-    with open(result_file, "w") as f:
-        json.dump(result, f, indent=4)
+    with open(result_file, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=4, ensure_ascii=False)
 
 def process():
-    result: dict = json.load(open(result_file, "r"))
+    result: dict = json.load(open(result_file, "r", encoding="utf-8"))
     for i in range(0, 4):
         print("{{#switch:{{{2|}}}")
         for k, v in result.items():
             print(f"|{k}={v[i]}")
         print("}}")
         
-def process2():
-    result: dict = json.load(open(result_file, "r"))
+def make_stylesheet():
+    result: dict = json.load(open(result_file, "r", encoding="utf-8"))
     multiplier = 4.2
-    for k, v in result.items():
+    for k in sorted(result):
         k: str
+        v = result[k]
         width, height, x, y = v
         style = f".story-image-{k.replace('_00.png', '').replace('(', '_').replace(')', '_').replace(',', '_')} img {{ " \
                 f"margin-left: -{round(max(0, width / multiplier * x - 29), 2)}px; " \
@@ -95,9 +96,19 @@ def process2():
                 "}"
         print(style)
 
+def make_height_switch():
+    result: dict = json.load(open(result_file, "r", encoding="utf-8"))
+    for k, v in result.items():
+        width, height, x, y = v
+        if height == 1280:
+            continue
+        k: str
+        k = k.replace('_', ' ')
+        print(f"|{k}={height}")
+
 def process3():
-    result: dict = json.load(open(result_file, "r"))
-    manual: dict = json.load(open(manual_file, "r"))
+    result: dict = json.load(open(result_file, "r", encoding="utf-8"))
+    manual: dict = json.load(open(manual_file, "r", encoding="utf-8"))
     out_path.mkdir(exist_ok=True)
     for k, v in manual.items():
         result[k] = v
@@ -110,9 +121,17 @@ def process3():
         print(f'mogrify -crop {portrait_width}x{portrait_height}{top_left[0]}{top_left[1]} "{k}_??.png"')
 
 def main():
-    # download()
-    predict()
-    process2()
+    from sys import argv
+    dispatcher = {
+        'download': download,
+        'predict': predict,
+        'css': make_stylesheet,
+        'height': make_height_switch,
+    }
+    if len(argv) <= 1:
+        print("Need at least 1 arg among " + ", ".join(dispatcher.keys()))
+        return
+    dispatcher[argv[1]]()
     
 if __name__ == "__main__":
     main()
